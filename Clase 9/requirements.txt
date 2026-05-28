@@ -1,7 +1,7 @@
 certifi==2025.11.12
 charset-normalizer==3.4.4
 idna==3.11
-numpy==2.4.6
+numpy
 pypdf==6.4.1
 requests==2.32.5
 typing_extensions==4.15.0
