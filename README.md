@@ -179,3 +179,15 @@ python sql_agent_ollama.py --q "¿Cuántas propiedades tienen geolocalización r
 4. **Auto-reparación**: si SQLite falla, se reenvía el SQL fallido + el error al LLM (hasta 2 reintentos).
 5. **Visualización**: `matplotlib` (`bar`/`line`/`hist`/`scatter`) sólo si el plan lo pidió.
 6. **Resumen**: una segunda llamada al LLM produce la respuesta en español, anclada a la tabla.
+
+### Bonus · GUI con Streamlit
+
+Hay una interfaz web mínima sobre el mismo agente en `Clase 10/bonus/`:
+
+```bash
+cd "Clase 10"
+pip install -r bonus/requirements.txt
+streamlit run bonus/streamlit_app.py
+```
+
+Abre `http://localhost:8501` con: ejemplos de preguntas, textarea libre, tabla con descarga CSV, SQL ejecutado y gráfico en pestañas separadas. Más detalles en `Clase 10/bonus/README.md`.
