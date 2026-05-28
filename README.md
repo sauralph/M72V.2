@@ -1,9 +1,10 @@
 # M72V.2 13 - 7027 - Laboratorio interdisciplinario de inteligencia artificial en organizaciones - PARTE I
 
-Para generar la presentación en PDF, ejecutá el siguiente comando:
+Para generar las presentaciones en PDF, ejecutá:
 
 ```bash
-npx @marp-team/marp-cli "Clase 9.md" -o "Clase 9.pdf" --theme ./style/uba.css --allow-local-files
+npx @marp-team/marp-cli "Clase 9.md"  -o "Clase 9.pdf"  --theme ./style/uba.css --allow-local-files
+npx @marp-team/marp-cli "Clase 10.md" -o "Clase 10.pdf" --theme ./style/uba.css --allow-local-files
 ```
 
 ---
@@ -101,3 +102,80 @@ OLLAMA_LLM_MODEL=deepseek-r1 python rag_ollama_min.py \
   ```
 
 - **"Ignoring wrong pointing object"**: Son warnings de `pypdf` sobre PDFs mal formados, se pueden ignorar.
+
+---
+
+## Agente SQL con Ollama - Consultas en lenguaje natural sobre SQLite
+
+Agente mínimo que traduce preguntas en español a SQL, las ejecuta sobre `Clase 10/real_estate.db` (sólo lectura) y devuelve una **respuesta en lenguaje natural**, una **tabla** y un **gráfico** cuando aplica.
+
+### Requisitos
+
+- Python 3.9+
+- Ollama instalado y corriendo
+
+### Instalación
+
+```bash
+cd "Clase 10"
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+ollama pull deepseek-r1   # default del script. También sirve llama3.1
+```
+
+### Preparación de datos (recomendado, una sola vez)
+
+La tabla `real_estate` original guarda precios como TEXT (`'USD 65.000'`) y reparte features en varias tablas con duplicados. El script `clean_real_estate.py` consolida todo en `real_estate_clean` con tipos numéricos correctos:
+
+```bash
+python clean_real_estate.py
+```
+
+Crea/refresca la tabla `real_estate_clean(id, price_raw, currency, price_usd,
+address, rooms, bedrooms, bathrooms, parking, total_m2, price_per_m2,
+latitude, longitude, description, link)` e índices sobre `price_usd`,
+`total_m2`, `bedrooms` y `(latitude, longitude)`. El agente la prefiere
+automáticamente para consultas de venta.
+
+### Uso
+
+```bash
+python sql_agent_ollama.py \
+  --db real_estate.db \
+  --q "¿Cuál es el alquiler promedio en USD por cantidad de dormitorios?"
+```
+
+### Opciones
+
+| Argumento | Descripción |
+|---|---|
+| `--db` | Ruta al archivo SQLite (default: `real_estate.db`) |
+| `--q` | Pregunta en lenguaje natural (requerido) |
+| `--chart-out` | Ruta para guardar el gráfico, si el agente decide dibujarlo (default: `chart.png`) |
+
+### Variables de entorno
+
+| Variable | Default | Descripción |
+|---|---|---|
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | URL del servidor Ollama |
+| `OLLAMA_LLM_MODEL` | `deepseek-r1` | Modelo para planificar SQL y resumir resultados |
+
+### Ejemplos de preguntas
+
+```bash
+python sql_agent_ollama.py --q "Mostrame los 10 alquileres más caros en USD"
+python sql_agent_ollama.py --q "Distribución de propiedades en venta por cantidad de dormitorios"
+python sql_agent_ollama.py --q "Precio promedio de venta en USD por barrio aproximado (los primeros 15)"
+python sql_agent_ollama.py --q "¿Cuántas propiedades tienen geolocalización registrada?"
+```
+
+### Cómo funciona
+
+1. **Introspección**: lee `sqlite_master` + `PRAGMA table_info` + 2 filas de muestra por tabla.
+2. **Planificación**: el LLM devuelve un JSON `{"sql": ..., "chart": null | {...}}`.
+3. **Ejecución segura**: conexión `?mode=ro` + whitelist de `SELECT`/`WITH` + cap de filas.
+4. **Auto-reparación**: si SQLite falla, se reenvía el SQL fallido + el error al LLM (hasta 2 reintentos).
+5. **Visualización**: `matplotlib` (`bar`/`line`/`hist`/`scatter`) sólo si el plan lo pidió.
+6. **Resumen**: una segunda llamada al LLM produce la respuesta en español, anclada a la tabla.
