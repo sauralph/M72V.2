@@ -130,9 +130,9 @@ resource "digitalocean_droplet" "ollama" {
 
   tags = ["sql-agent-toy", "ollama", "gpu"]
 
-  # GPU + first model pull is slow; don't block destroy.
+  # Do not recreate the expensive GPU box when cloud-init text changes.
   lifecycle {
-    create_before_destroy = false
+    ignore_changes = [user_data]
   }
 }
 
@@ -196,9 +196,9 @@ resource "digitalocean_app" "sql_agent" {
       instance_size_slug = "basic-xxs"
       http_port          = 8000
 
-      # source_dir = app root; dockerfile_path is relative to that.
+      # source_dir: app context. dockerfile_path: relative to REPO root (DO quirk).
       source_dir      = "Clase 6_parte_2"
-      dockerfile_path = "Dockerfile"
+      dockerfile_path = "Clase 6_parte_2/Dockerfile"
 
       github {
         repo           = var.github_repo
