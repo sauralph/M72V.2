@@ -1,0 +1,28 @@
+#cloud-config
+# Installs Ollama on a DigitalOcean GPU Droplet and pulls the lab model.
+# NOTE: quote every runcmd that contains ':' — YAML treats "key: value" as a map.
+
+package_update: true
+package_upgrade: false
+
+write_files:
+  - path: /etc/systemd/system/ollama.service.d/override.conf
+    owner: root:root
+    permissions: "0644"
+    content: |
+      [Service]
+      Environment="OLLAMA_HOST=0.0.0.0:11434"
+      Environment="OLLAMA_KEEP_ALIVE=24h"
+
+runcmd:
+  - curl -fsSL https://ollama.com/install.sh | sh
+  - systemctl daemon-reload
+  - systemctl enable ollama
+  - systemctl restart ollama
+  - |
+    for i in $(seq 1 90); do
+      if curl -sf http://127.0.0.1:11434/api/tags >/dev/null; then break; fi
+      sleep 2
+    done
+  - ollama pull ${ollama_model}
+  - 'echo ready > /var/log/ollama-bootstrap.done'

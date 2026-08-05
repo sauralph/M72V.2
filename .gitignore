@@ -1,4 +1,12 @@
 __pycache__/
+.venv/
+.env
 .DS_Store
 *.png
 *.pdf
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+Clase 6_parte_2/bonus/chart.png
+Clase 10/bonus/chart.png

@@ -1,0 +1,21 @@
+# Local "prod-like" stack: API + Ollama on the same machine.
+# El LLM puede vivir fuera del compose (host) vía host.docker.internal.
+services:
+  agent:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      REAL_ESTATE_DB: /data/real_estate.db
+      # Ollama en el host (Linux: extra_hosts; Mac/Win: host.docker.internal)
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://host.docker.internal:11434/v1}
+      LLM_MODEL: ${LLM_MODEL:-llama3.1}
+      OLLAMA_LLM_MODEL: ${LLM_MODEL:-llama3.1}
+      LLM_API_KEY: ${LLM_API_KEY:-ollama}
+      LLM_TIMEOUT: ${LLM_TIMEOUT:-120}
+    volumes:
+      - ./data/real_estate.db:/data/real_estate.db:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

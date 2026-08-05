@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agente SQL · Toy Production</title>
+  <style>
+    :root {
+      --teal: #3F7A85;
+      --teal-dark: #2C5D67;
+      --orange: #EC7A1A;
+      --bg: #f7f9fa;
+      --card: #fff;
+      --text: #1f2937;
+      --muted: #5b6573;
+      --rule: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    header {
+      background: linear-gradient(120deg, var(--teal-dark), var(--teal));
+      color: #fff;
+      padding: 1.25rem 1.5rem;
+    }
+    header h1 { margin: 0; font-size: 1.35rem; font-weight: 700; }
+    header p { margin: 0.35rem 0 0; opacity: 0.9; font-size: 0.95rem; }
+    main {
+      max-width: 960px;
+      margin: 1.25rem auto;
+      padding: 0 1rem 2rem;
+      display: grid;
+      gap: 1rem;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--rule);
+      border-radius: 12px;
+      padding: 1rem 1.1rem;
+      box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .chip {
+      border: 1px solid var(--rule);
+      background: #fff;
+      border-radius: 999px;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      color: var(--teal-dark);
+    }
+    .chip:hover { border-color: var(--teal); background: #eef5f6; }
+    textarea {
+      width: 100%;
+      min-height: 88px;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      padding: 0.75rem;
+      font: inherit;
+      resize: vertical;
+    }
+    button.primary {
+      background: var(--orange);
+      color: #fff;
+      border: 0;
+      border-radius: 8px;
+      padding: 0.65rem 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button.primary:disabled { opacity: 0.55; cursor: not-allowed; }
+    .muted { color: var(--muted); font-size: 0.9rem; }
+    .status { font-size: 0.9rem; }
+    .ok { color: #0f766e; }
+    .bad { color: #b91c1c; }
+    pre, code {
+      font-family: ui-monospace, "JetBrains Mono", Menlo, monospace;
+      font-size: 0.85rem;
+    }
+    pre {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 0.9rem;
+      border-radius: 8px;
+      overflow: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border-bottom: 1px solid var(--rule);
+      text-align: left;
+      padding: 0.45rem 0.4rem;
+      vertical-align: top;
+    }
+    th { color: var(--teal-dark); font-size: 0.8rem; text-transform: uppercase; }
+    #answer { white-space: pre-wrap; }
+    .tabs { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .tab {
+      border: 1px solid var(--rule);
+      background: #fff;
+      border-radius: 8px;
+      padding: 0.4rem 0.75rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .tab.active { background: var(--teal); color: #fff; border-color: var(--teal); }
+    .panel { display: none; }
+    .panel.active { display: block; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🏠 Agente SQL · Toy Production</h1>
+    <p>Bonus de Clase 10, empaquetado como API + UI mínima lista para desplegar.</p>
+  </header>
+  <main>
+    <section class="card">
+      <div class="row" style="justify-content: space-between;">
+        <strong>Estado</strong>
+        <span id="health" class="status muted">chequeando…</span>
+      </div>
+      <p id="tables" class="muted" style="margin:0.6rem 0 0;"></p>
+    </section>
+
+    <section class="card">
+      <strong>Ejemplos</strong>
+      <div id="examples" class="row" style="margin-top:0.6rem;"></div>
+      <label for="q" class="muted" style="display:block;margin:0.9rem 0 0.35rem;">Tu pregunta</label>
+      <textarea id="q" placeholder="Ej: ¿Cuál es el precio promedio por m²?"></textarea>
+      <div class="row" style="margin-top:0.75rem;">
+        <button id="go" class="primary" type="button">Preguntar</button>
+        <span id="meta" class="muted"></span>
+      </div>
+    </section>
+
+    <section class="card" id="result" style="display:none;">
+      <strong>Respuesta</strong>
+      <p id="answer"></p>
+      <div class="tabs">
+        <button class="tab active" data-tab="data" type="button">Datos</button>
+        <button class="tab" data-tab="sql" type="button">SQL</button>
+      </div>
+      <div id="panel-data" class="panel active">
+        <div style="overflow:auto;"><table id="tbl"></table></div>
+      </div>
+      <div id="panel-sql" class="panel">
+        <pre id="sql"></pre>
+      </div>
+    </section>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    async function loadMeta() {
+      try {
+        const h = await fetch("/health").then(r => r.json());
+        const el = $("health");
+        if (h.status === "ok") {
+          el.textContent = `OK · ${h.llm.model}`;
+          el.className = "status ok";
+        } else {
+          el.textContent = `Degradado · ${h.llm.detail || "revisá LLM/DB"}`;
+          el.className = "status bad";
+        }
+      } catch (e) {
+        $("health").textContent = "Sin conexión al API";
+        $("health").className = "status bad";
+      }
+
+      try {
+        const m = await fetch("/meta").then(r => r.json());
+        $("tables").textContent = Object.entries(m.tables)
+          .map(([t, n]) => `${t}: ${n} filas`).join(" · ");
+        const box = $("examples");
+        box.innerHTML = "";
+        (m.examples || []).forEach((ex) => {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "chip";
+          b.textContent = ex;
+          b.onclick = () => { $("q").value = ex; };
+          box.appendChild(b);
+        });
+      } catch (_) {}
+    }
+
+    document.querySelectorAll(".tab").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+        btn.classList.add("active");
+        $("panel-" + btn.dataset.tab).classList.add("active");
+      });
+    });
+
+    function renderTable(cols, rows) {
+      const tbl = $("tbl");
+      if (!cols || !cols.length) {
+        tbl.innerHTML = "<tr><td class='muted'>Sin filas</td></tr>";
+        return;
+      }
+      const head = "<tr>" + cols.map(c => `<th>${esc(c)}</th>`).join("") + "</tr>";
+      const body = rows.map(r =>
+        "<tr>" + r.map(v => `<td>${esc(v == null ? "" : String(v))}</td>`).join("") + "</tr>"
+      ).join("");
+      tbl.innerHTML = head + body;
+    }
+
+    function esc(s) {
+      return s.replace(/[&<>"']/g, (c) => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
+      }[c]));
+    }
+
+    $("go").onclick = async () => {
+      const question = $("q").value.trim();
+      if (!question) return;
+      $("go").disabled = true;
+      $("meta").textContent = "consultando…";
+      try {
+        const res = await fetch("/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || res.statusText);
+        $("result").style.display = "block";
+        $("answer").textContent = data.answer;
+        $("sql").textContent = data.sql;
+        renderTable(data.cols, data.rows);
+        $("meta").textContent = `${data.elapsed_s}s · ${data.rows.length} filas · ${data.model}`;
+      } catch (e) {
+        $("result").style.display = "block";
+        $("answer").textContent = "Error: " + e.message;
+        $("sql").textContent = "";
+        $("tbl").innerHTML = "";
+        $("meta").textContent = "";
+      } finally {
+        $("go").disabled = false;
+      }
+    };
+
+    loadMeta();
+  </script>
+</body>
+</html>

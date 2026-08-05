@@ -1,0 +1,16 @@
+# Optional sketch: AWS ECS Fargate + ALB (not wired into main.tf).
+# Use as a reading map — fill account IDs, subnets and ECR before apply.
+#
+# High-level resources:
+#   1. ECR repository + docker push of Clase 6_parte_2 image
+#   2. ECS cluster + Fargate task definition (env: LLM_*)
+#   3. Service + Application Load Balancer
+#   4. Secrets Manager for LLM_API_KEY
+#
+# CLI alternative (zero Terraform):
+#   aws ecr create-repository --repository-name sql-agent-toy
+#   docker build -t sql-agent-toy .
+#   docker tag sql-agent-toy:latest $ACCOUNT.dkr.ecr.$REGION.amazonaws.com/sql-agent-toy:latest
+#   docker push ...
+#   aws ecs create-cluster --cluster-name sql-agent-toy
+#   # then register task + service with awsvpc, public subnet, security group :8000

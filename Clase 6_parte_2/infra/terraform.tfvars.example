@@ -1,0 +1,18 @@
+app_name      = "sql-agent-toy"
+app_region    = "nyc"
+gpu_region    = "tor1"                 # must have GPU stock — check DO console / sizes API
+gpu_size      = "gpu-6000adax1-48gb"   # RTX 6000 Ada 48GB (~$1.57/hr; 4000ada often no stock)
+gpu_image     = "ubuntu-22-04-x64"
+ollama_model  = "llama3.1"
+github_repo   = "tu-usuario/M72V.2"
+github_branch = "main"
+deploy_app    = true
+
+# SSH: default is ~/.ssh/id_ed25519_do_lab.pub (generate if missing — see README)
+# ssh_public_key_path = "~/.ssh/id_ed25519_do_lab.pub"
+# or paste the line:
+# ssh_public_key = "ssh-ed25519 AAAA... m72v2-sql-agent-lab"
+
+# Optional hardening:
+# ssh_allowed_cidrs    = ["203.0.113.10/32"]
+# ollama_allowed_cidrs = ["0.0.0.0/0"]  # toy: App Platform needs public reachability
