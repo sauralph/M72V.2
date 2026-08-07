@@ -1,6 +1,6 @@
 #cloud-config
 # Installs Ollama on a DigitalOcean GPU Droplet and pulls the lab model.
-# NOTE: quote every runcmd that contains ':' — YAML treats "key: value" as a map.
+# NOTE: quote every runcmd that contains ':' - YAML treats "key: value" as a map.
 
 package_update: true
 package_upgrade: false
