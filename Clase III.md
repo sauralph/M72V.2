@@ -12,7 +12,7 @@ size: 16:9
 ## Toy production del agente SQL · CLI agents · MCP · IaC
 
 **Mg. Ezequiel Nuske** · Ex Chief Data Officer
-Laboratorio interdisciplinario de IA en organizaciones · Clase 6 · Parte 2
+Laboratorio interdisciplinario de IA en organizaciones · Clase III
 
 ---
 
@@ -20,7 +20,7 @@ Laboratorio interdisciplinario de IA en organizaciones · Clase 6 · Parte 2
 
 1. Recap: el **bonus de Clase II** (Streamlit)
 2. Qué hay que **modificar** para una versión “prod toy”
-3. El artefacto: `Clase 6_parte_2/` en ~200 líneas + Docker
+3. El artefacto: `Clase III/` en ~200 líneas + Docker
 4. Instalar un **CLI-LLM**: Grok · Claude Code · genérico
 5. ¿Qué es un **MCP**?
 6. MCP de **DigitalOcean** y **AWS**
@@ -124,7 +124,7 @@ Laboratorio interdisciplinario de IA en organizaciones · Clase 6 · Parte 2
 # Anatomía del artefacto
 
 ```text
-Clase 6_parte_2/
+Clase III/
 ├── app/
 │   ├── agent.py          # NL → SQL → respuesta (read-only)
 │   ├── api.py            # FastAPI: /health /meta /ask /
@@ -233,7 +233,7 @@ Todavía **falta** (y hay que decirlo en clase): auth, rate limit, audit log, PI
 # Cómo correrlo en 60 segundos
 
 ```bash
-cd "Clase 6_parte_2"
+cd "Clase III"
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ollama pull llama3.1
@@ -298,7 +298,7 @@ claude
 ```bash
 cd /ruta/M72V.2
 claude
-# "Revisá Clase 6_parte_2 y proponé un healthcheck más estricto"
+# "Revisá Clase III y proponé un healthcheck más estricto"
 ```
 
 Documentación oficial: `https://docs.anthropic.com/en/docs/claude-code`
@@ -320,7 +320,7 @@ grok   # o el binario del TUI del lab
 
 **Patrones útiles**
 
-- “Generá el PDF de `Clase 6_parte_2.md` con Marp”
+- “Generá el PDF de `Clase III.md` con Marp”
 - “Explicá el `main.tf` y listá secrets faltantes”
 - Skills del entorno: review, docker, terraform
 
@@ -471,7 +471,7 @@ aws configure sso
 
 1. Abrí el CLI-LLM en `M72V.2`
 2. “Listá los MCP conectados”
-3. “Leé `Clase 6_parte_2/infra/main.tf` y explicá qué crea”
+3. “Leé `Clase III/infra/main.tf` y explicá qué crea”
 4. Con DO MCP: “¿Hay alguna app llamada `sql-agent-toy`?”
 5. Si no existe: “Generá el plan de Terraform; **no apliques** todavía”
 6. Revisá secrets: `TF_VAR_llm_api_key`, `DIGITALOCEAN_TOKEN`
@@ -531,7 +531,7 @@ export DIGITALOCEAN_TOKEN=dop_v1_...
 export TF_VAR_github_repo="tu-usuario/M72V.2"
 # SSH: ~/.ssh/id_ed25519_do_lab.pub (ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_do_lab -N "")
 
-cd "Clase 6_parte_2/infra"
+cd "Clase III/infra"
 cp terraform.tfvars.example terraform.tfvars
 # gpu_region con stock; ollama_model = llama3.1
 
@@ -639,7 +639,7 @@ Misma **imagen mental**: proceso stateless + config por env + health.
 ```text
 Clase I   RAG local (PDF → embeddings → respuesta)
 Clase II  Agente SQL + bonus Streamlit
-Clase 6.2 Empaquetar el bonus: API · Docker · CLI · MCP · IaC
+Clase III Empaquetar el bonus: API · Docker · CLI · MCP · IaC
 ```
 
 Mismo espíritu del laboratorio: **mínimo legible**, sin frameworks opacos, cada pieza se puede abrir en clase.
@@ -656,4 +656,4 @@ Mismo espíritu del laboratorio: **mínimo legible**, sin frameworks opacos, cad
 
 Pregunta final: *¿qué es lo mínimo que tu organización necesita para confiar en un agente en producción?*
 
-Gracias · consultas · `Clase 6_parte_2/README.md`
+Gracias · consultas · `Clase III/README.md`

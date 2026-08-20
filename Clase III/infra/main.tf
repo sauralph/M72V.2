@@ -83,7 +83,7 @@ variable "ollama_allowed_cidrs" {
 
 variable "github_repo" {
   type        = string
-  description = "owner/repo that contains Clase 6_parte_2/Dockerfile"
+  description = "owner/repo that contains Clase III/Dockerfile"
 }
 
 variable "github_branch" {
@@ -197,8 +197,8 @@ resource "digitalocean_app" "sql_agent" {
       http_port          = 8000
 
       # source_dir: app context. dockerfile_path: relative to REPO root (DO quirk).
-      source_dir      = "Clase 6_parte_2"
-      dockerfile_path = "Clase 6_parte_2/Dockerfile"
+      source_dir      = "Clase III"
+      dockerfile_path = "Clase III/Dockerfile"
 
       github {
         repo           = var.github_repo

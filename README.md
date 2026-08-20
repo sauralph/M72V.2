@@ -3,7 +3,7 @@
 Para generar las presentaciones en PDF, ejecutá:
 
 ```bash
-npx @marp-team/marp-cli "Clase 6_parte_2.md" -o "Clase 6_parte_2.pdf" --theme ./style/uba.css --allow-local-files
+npx @marp-team/marp-cli "Clase III.md" -o "Clase III.pdf" --theme ./style/uba.css --allow-local-files
 npx @marp-team/marp-cli "Clase I.md"  -o "Clase I.pdf"  --theme ./style/uba.css --allow-local-files
 npx @marp-team/marp-cli "Clase II.md" -o "Clase II.pdf" --theme ./style/uba.css --allow-local-files
 ```
@@ -195,16 +195,16 @@ Abre `http://localhost:8501` con: ejemplos de preguntas, textarea libre, tabla c
 
 ---
 
-## Clase 6 · Parte 2 — Toy production del bonus
+## Clase III — Toy production del bonus
 
 Versión mínima desplegable del bonus Streamlit: **FastAPI + UI estática + Docker + Terraform (DigitalOcean)**. Incluye presentación sobre CLI-LLM (Grok / Claude Code), MCP y despliegue IaC.
 
 ```bash
-cd "Clase 6_parte_2"
+cd "Clase III"
 pip install -r requirements.txt
 ollama pull llama3.1
 uvicorn app.api:app --port 8000
 # → http://localhost:8000
 ```
 
-Ver `Clase 6_parte_2/README.md` y `Clase 6_parte_2.md`.
+Ver `Clase III/README.md` y `Clase III.md`.

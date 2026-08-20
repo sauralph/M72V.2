@@ -2,7 +2,7 @@
 # Use as a reading map — fill account IDs, subnets and ECR before apply.
 #
 # High-level resources:
-#   1. ECR repository + docker push of Clase 6_parte_2 image
+#   1. ECR repository + docker push of Clase III image
 #   2. ECS cluster + Fargate task definition (env: LLM_*)
 #   3. Service + Application Load Balancer
 #   4. Secrets Manager for LLM_API_KEY

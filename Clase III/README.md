@@ -1,4 +1,4 @@
-# Clase 6 · Parte 2 — Toy production del bonus de Clase II
+# Clase III — Toy production del bonus de Clase II
 
 Toma la GUI Streamlit del bonus (`Clase II/bonus/`) y la convierte en una
 **versión mínima desplegable**: API HTTP + UI estática + Docker + IaC.
@@ -20,7 +20,7 @@ Toma la GUI Streamlit del bonus (`Clase II/bonus/`) y la convierte en una
 ## Instalación local (sin Docker)
 
 ```bash
-cd "Clase 6_parte_2"
+cd "Clase III"
 
 # Preferible (si tenés uv):
 uv venv .venv && source .venv/bin/activate
@@ -86,7 +86,7 @@ Hay un esbozo AWS en `infra/aws_ecs_fargate.tf.example`.
 
 Esta clase no instala un MCP *dentro* del agente SQL; enseña a usar **CLI agents**
 (Grok / Claude Code / genérico) y **MCPs de cloud** (DigitalOcean, AWS) para
-operar el despliegue. Detalle en la presentación `Clase 6_parte_2.md`.
+operar el despliegue. Detalle en la presentación `Clase III.md`.
 
 ## Por qué no es “producción real”
 

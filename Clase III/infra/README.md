@@ -39,7 +39,7 @@ ssh -i ~/.ssh/id_ed25519_do_lab root@$(terraform output -raw ollama_public_ip)
 ## Apply
 
 ```bash
-cd "Clase 6_parte_2/infra"
+cd "Clase III/infra"
 cp terraform.tfvars.example terraform.tfvars
 # editar: github_repo, gpu_region
 
@@ -105,7 +105,7 @@ terraform destroy
 | `size is not available` | Cambiá `gpu_region` / `gpu_size`; revisá stock en la consola DO |
 | `/api/tags` connection refused | Esperá cloud-init; `ssh root@IP` y `journalctl -u ollama -f` |
 | App `/health` degradado | Modelo aún no pulled; o firewall bloquea 11434 |
-| App no buildea | `github_repo` y path `Clase 6_parte_2/Dockerfile` correctos |
+| App no buildea | `github_repo` y path `Clase III/Dockerfile` correctos |
 
 ## No aplica por defecto
 
