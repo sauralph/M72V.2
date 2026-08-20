@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>ML Price Bridge</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <div class="mark">ML</div>
+      <div>
+        <h1>Price Bridge</h1>
+        <p class="sub">Grok searches Mercado Libre with your session</p>
+      </div>
+    </header>
+
+    <section class="status">
+      <div class="row">
+        <span>Mercado Libre</span>
+        <strong id="ml-state">checking…</strong>
+      </div>
+      <div class="row">
+        <span>Grok bridge</span>
+        <strong id="bridge-state">checking…</strong>
+      </div>
+    </section>
+
+    <section class="actions">
+      <button id="open-ml" type="button">Open Mercado Libre</button>
+      <button id="reconnect" type="button" class="ghost">Reconnect to Grok</button>
+    </section>
+
+    <section>
+      <label for="query">Test search</label>
+      <div class="search-row">
+        <input id="query" type="text" placeholder="ASUS Dual RTX 5060" />
+        <button id="search" type="button">Go</button>
+      </div>
+      <pre id="out" hidden></pre>
+    </section>
+
+    <p class="hint">
+      1. Log into mercadolibre.com.ar in this browser.<br />
+      2. Leave that Mercado Libre tab open.<br />
+      3. Start a Grok session, then Reconnect.<br />
+      4. Ask Grok to search prices.
+    </p>
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>

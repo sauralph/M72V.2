@@ -6,6 +6,7 @@ Para generar las presentaciones en PDF, ejecutá:
 npx @marp-team/marp-cli "Clase III.md" -o "Clase III.pdf" --theme ./style/uba.css --allow-local-files
 npx @marp-team/marp-cli "Clase I.md"  -o "Clase I.pdf"  --theme ./style/uba.css --allow-local-files
 npx @marp-team/marp-cli "Clase II.md" -o "Clase II.pdf" --theme ./style/uba.css --allow-local-files
+npx @marp-team/marp-cli "Clase IV.md" -o "Clase IV.pdf" --theme ./style/uba.css --allow-local-files
 ```
 
 ---
@@ -208,3 +209,18 @@ uvicorn app.api:app --port 8000
 ```
 
 Ver `Clase III/README.md` y `Clase III.md`.
+
+---
+
+## Clase IV — Conectándose con sistemas que no cooperan
+
+MCP **stdio** + extensión Chrome (**ML Price Bridge**) para que Grok CLI lea listings de Mercado Libre con **tu sesión**, no con una API de partner. El MCP oficial suele fallar el handshake; el puente local no manda cookies al modelo.
+
+```bash
+# 1) Load unpacked: Clase IV/ml-bridge/extension
+# 2) Log into mercadolibre.com.ar, Reconnect to Grok
+# 3) ~/.grok/config.toml → [mcp_servers.ml-bridge]
+python3 "Clase IV/ml-bridge/server/ml_bridge.py"   # lo lanza Grok al iniciar sesión
+```
+
+Ver `Clase IV/README.md`, `Clase IV/ml-bridge/README.md` y `Clase IV.md`.
