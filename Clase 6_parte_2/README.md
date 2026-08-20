@@ -1,9 +1,9 @@
-# Clase 6 · Parte 2 — Toy production del bonus de Clase 10
+# Clase 6 · Parte 2 — Toy production del bonus de Clase II
 
-Toma la GUI Streamlit del bonus (`Clase 10/bonus/`) y la convierte en una
+Toma la GUI Streamlit del bonus (`Clase II/bonus/`) y la convierte en una
 **versión mínima desplegable**: API HTTP + UI estática + Docker + IaC.
 
-| Lab (Clase 10 bonus) | Toy production (esta carpeta) |
+| Lab (Clase II bonus) | Toy production (esta carpeta) |
 |---|---|
 | Streamlit monolito | FastAPI + `static/index.html` |
 | Ollama nativo hardcodeado | Cliente OpenAI-compatible (Ollama `/v1` u otro) |
@@ -38,7 +38,7 @@ uvicorn app.api:app --reload --port 8000
 
 Abrí `http://localhost:8000`.
 
-La DB completa de Clase 10 ya está en `data/real_estate.db` (default). Seed chico:
+La DB completa de Clase II ya está en `data/real_estate.db` (default). Seed chico:
 
 ```bash
 REAL_ESTATE_DB=./data/toy_real_estate.db uvicorn app.api:app --port 8000

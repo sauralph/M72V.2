@@ -1,7 +1,7 @@
 """
 API HTTP mínima del agente SQL (toy-production).
 
-Reemplaza la GUI Streamlit de Clase 10/bonus por:
+Reemplaza la GUI Streamlit de Clase II/bonus por:
 - FastAPI (contrato JSON estable)
 - static/index.html (UI mínima sin framework)
 - /health para orquestadores y load balancers
@@ -25,7 +25,7 @@ DB_PATH = os.environ.get("REAL_ESTATE_DB", DEFAULT_DB)
 
 app = FastAPI(
     title="Agente SQL · Toy Production",
-    description="Versión mínima desplegable del bonus de Clase 10",
+    description="Versión mínima desplegable del bonus de Clase II",
     version="0.1.0",
 )
 

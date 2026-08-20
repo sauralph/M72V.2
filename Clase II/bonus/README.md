@@ -21,7 +21,7 @@ Interfaz web mínima sobre `sql_agent_ollama.py`. Conserva exactamente la misma 
 
 ## Instalación
 
-Desde `Clase 10/`:
+Desde `Clase II/`:
 
 ```bash
 source .venv/bin/activate          # el mismo venv del agente CLI
@@ -30,7 +30,7 @@ pip install -r bonus/requirements.txt
 
 ## Uso
 
-Desde `Clase 10/`:
+Desde `Clase II/`:
 
 ```bash
 streamlit run bonus/streamlit_app.py
@@ -61,5 +61,5 @@ Abre `http://localhost:8501` en el navegador.
 
 - **No reimplementa nada**: importa `agent_answer`, `ensure_clean_table`, `HIDDEN_TABLES` y `CLEAN_TABLE` desde el módulo del agente.
 - **`@st.cache_data` sobre `db_stats`**: evita golpear SQLite en cada rerun.
-- **No reescribe el `chart.png`** dentro de `Clase 10/`: lo guarda en `bonus/chart.png`.
+- **No reescribe el `chart.png`** dentro de `Clase II/`: lo guarda en `bonus/chart.png`.
 - **Falla con mensajes claros** si Ollama no responde o el modelo no está pulled.

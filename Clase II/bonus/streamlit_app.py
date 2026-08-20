@@ -1,7 +1,7 @@
 """
 GUI Streamlit del agente SQL.
 
-Ejecutar desde `Clase 10/`:
+Ejecutar desde `Clase II/`:
     streamlit run bonus/streamlit_app.py
 
 Variables de entorno opcionales:

@@ -4,8 +4,8 @@ Para generar las presentaciones en PDF, ejecutá:
 
 ```bash
 npx @marp-team/marp-cli "Clase 6_parte_2.md" -o "Clase 6_parte_2.pdf" --theme ./style/uba.css --allow-local-files
-npx @marp-team/marp-cli "Clase 9.md"  -o "Clase 9.pdf"  --theme ./style/uba.css --allow-local-files
-npx @marp-team/marp-cli "Clase 10.md" -o "Clase 10.pdf" --theme ./style/uba.css --allow-local-files
+npx @marp-team/marp-cli "Clase I.md"  -o "Clase I.pdf"  --theme ./style/uba.css --allow-local-files
+npx @marp-team/marp-cli "Clase II.md" -o "Clase II.pdf" --theme ./style/uba.css --allow-local-files
 ```
 
 ---
@@ -108,7 +108,7 @@ OLLAMA_LLM_MODEL=deepseek-r1 python rag_ollama_min.py \
 
 ## Agente SQL con Ollama - Consultas en lenguaje natural sobre SQLite
 
-Agente mínimo que traduce preguntas en español a SQL, las ejecuta sobre `Clase 10/real_estate.db` (sólo lectura) y devuelve una **respuesta en lenguaje natural**, una **tabla** y un **gráfico** cuando aplica.
+Agente mínimo que traduce preguntas en español a SQL, las ejecuta sobre `Clase II/real_estate.db` (sólo lectura) y devuelve una **respuesta en lenguaje natural**, una **tabla** y un **gráfico** cuando aplica.
 
 ### Requisitos
 
@@ -118,7 +118,7 @@ Agente mínimo que traduce preguntas en español a SQL, las ejecuta sobre `Clase
 ### Instalación
 
 ```bash
-cd "Clase 10"
+cd "Clase II"
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -183,15 +183,15 @@ python sql_agent_ollama.py --q "¿Cuántas propiedades tienen geolocalización r
 
 ### Bonus · GUI con Streamlit
 
-Hay una interfaz web mínima sobre el mismo agente en `Clase 10/bonus/`:
+Hay una interfaz web mínima sobre el mismo agente en `Clase II/bonus/`:
 
 ```bash
-cd "Clase 10"
+cd "Clase II"
 pip install -r bonus/requirements.txt
 streamlit run bonus/streamlit_app.py
 ```
 
-Abre `http://localhost:8501` con: ejemplos de preguntas, textarea libre, tabla con descarga CSV, SQL ejecutado y gráfico en pestañas separadas. Más detalles en `Clase 10/bonus/README.md`.
+Abre `http://localhost:8501` con: ejemplos de preguntas, textarea libre, tabla con descarga CSV, SQL ejecutado y gráfico en pestañas separadas. Más detalles en `Clase II/bonus/README.md`.
 
 ---
 

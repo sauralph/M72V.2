@@ -18,7 +18,7 @@ Laboratorio interdisciplinario de IA en organizaciones · Clase 6 · Parte 2
 
 # Agenda
 
-1. Recap: el **bonus de Clase 10** (Streamlit)
+1. Recap: el **bonus de Clase II** (Streamlit)
 2. Qué hay que **modificar** para una versión “prod toy”
 3. El artefacto: `Clase 6_parte_2/` en ~200 líneas + Docker
 4. Instalar un **CLI-LLM**: Grok · Claude Code · genérico
@@ -29,7 +29,7 @@ Laboratorio interdisciplinario de IA en organizaciones · Clase 6 · Parte 2
 
 ---
 
-# Recap · Bonus de Clase 10
+# Recap · Bonus de Clase II
 
 <div class="columns">
 
@@ -99,7 +99,7 @@ Laboratorio interdisciplinario de IA en organizaciones · Clase 6 · Parte 2
 
 # Hipótesis
 
-> Si el agente de Clase 10 es el *cerebro*,
+> Si el agente de Clase II es el *cerebro*,
 > el bonus Streamlit es la *demo*,
 > entonces la toy-production es el *esqueleto operativo*:
 > API · config · contenedor · IaC · herramientas de agente en la terminal.
@@ -111,13 +111,13 @@ Laboratorio interdisciplinario de IA en organizaciones · Clase 6 · Parte 2
 | De (bonus) | A (toy-prod) | Por qué |
 |---|---|---|
 | Streamlit | **FastAPI** + HTML mínimo | Contrato HTTP, health, deploy simple |
-| Import del agente CLI | Módulo `app/agent.py` autocontenido | Imagen sin depender de `Clase 10/` |
+| Import del agente CLI | Módulo `app/agent.py` autocontenido | Imagen sin depender de `Clase II/` |
 | Ollama `/api/generate` | **OpenAI-compatible** `/v1` (+ fallback) | Cambiar de proveedor sin reescribir |
 | Variables en código | `REAL_ESTATE_DB`, `LLM_*` | 12-factor / secrets en la nube |
 | Sin health | `GET /health` | Load balancer, App Platform, k8s |
 | `pip` local | **Dockerfile** multi-paso simple | Reproducible en CI y en DO/AWS |
 | “Corré esto” | **Terraform** App Platform | Infra declarativa, no clickops |
-| DB en `Clase 10/` | Copia en `data/real_estate.db` | Self-contained en el deploy |
+| DB en `Clase II/` | Copia en `data/real_estate.db` | Self-contained en el deploy |
 
 ---
 
@@ -129,7 +129,7 @@ Clase 6_parte_2/
 │   ├── agent.py          # NL → SQL → respuesta (read-only)
 │   ├── api.py            # FastAPI: /health /meta /ask /
 │   └── static/index.html # UI mínima (sin Streamlit)
-├── data/real_estate.db   # copia de Clase 10 (+ toy opcional)
+├── data/real_estate.db   # copia de Clase II (+ toy opcional)
 ├── Dockerfile
 ├── docker-compose.yml    # API → Ollama del host
 ├── infra/main.tf         # DigitalOcean App Platform
@@ -212,7 +212,7 @@ Ollama lo expone en `/v1`. Cualquier gateway (vLLM, LiteLLM, Azure OpenAI) entra
 
 # Cambio 3 · Seguridad mínima que ya teníamos
 
-Se **conserva** del agente de Clase 10:
+Se **conserva** del agente de Clase II:
 
 - SQLite `?mode=ro` (solo lectura)
 - Whitelist `SELECT` / `WITH`
@@ -634,11 +634,11 @@ Misma **imagen mental**: proceso stateless + config por env + health.
 
 ---
 
-# Relación con Clase 9 y Clase 10
+# Relación con Clase I y Clase II
 
 ```text
-Clase 9   RAG local (PDF → embeddings → respuesta)
-Clase 10  Agente SQL + bonus Streamlit
+Clase I   RAG local (PDF → embeddings → respuesta)
+Clase II  Agente SQL + bonus Streamlit
 Clase 6.2 Empaquetar el bonus: API · Docker · CLI · MCP · IaC
 ```
 

@@ -1,7 +1,7 @@
 """
 Agente SQL mínimo (toy-production).
 
-Evolución del agente de Clase 10:
+Evolución del agente de Clase II:
 - Config por entorno (DB, LLM URL, modelo, timeouts)
 - Cliente HTTP OpenAI-compatible (Ollama /v1 o cualquier gateway)
 - Misma lógica: schema → plan JSON → SQL ro → repair → summarize
