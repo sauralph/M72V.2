@@ -1,8 +1,11 @@
 # Toy production IaC
-# 1) GPU Droplet  → Ollama (OpenAI-compatible on :11434/v1)
-# 2) App Platform → SQL agent FastAPI, wired to that Ollama
+# Default (llm_backend = "serverless"):
+#   App Platform → SQL agent FastAPI → DO Serverless Inference (OpenAI-compatible)
+# Alternativa (llm_backend = "ollama_gpu"):
+#   App Platform → SQL agent FastAPI → GPU Droplet con Ollama
 #
-# Cost warning: GPU droplets are billed hourly while running (~$0.76+/hr for RTX 4000 Ada).
+# Costos: App Platform ~US$5/mes + tokens (serverless).
+# Con ollama_gpu, el GPU se cobra por hora mientras exista (~$0.76–1.57/hr).
 # Always `terraform destroy` when the lab ends.
 
 terraform {
@@ -23,7 +26,7 @@ provider "digitalocean" {
 
 variable "app_name" {
   type        = string
-  description = "Base name for App Platform + GPU droplet"
+  description = "Base name for App Platform (+ GPU droplet if ollama_gpu)"
   default     = "sql-agent-toy"
 }
 
@@ -32,6 +35,62 @@ variable "app_region" {
   description = "App Platform region slug (nyc, ams, sfo, ...)"
   default     = "nyc"
 }
+
+variable "app_instance_size" {
+  type        = string
+  description = "App Platform instance size (apps-s-1vcpu-0.5gb ≈ US$5/mes)"
+  default     = "apps-s-1vcpu-0.5gb"
+}
+
+variable "repo_clone_url" {
+  type        = string
+  description = "Public git URL of the repo that contains Clase III/Dockerfile"
+  default     = "https://github.com/sauralph/M72V.2.git"
+}
+
+variable "repo_branch" {
+  type    = string
+  default = "main"
+}
+
+variable "deploy_app" {
+  type        = bool
+  description = "Also deploy the FastAPI agent on App Platform"
+  default     = true
+}
+
+variable "llm_backend" {
+  type        = string
+  description = "serverless (DO Serverless Inference) | ollama_gpu (GPU Droplet + Ollama)"
+  default     = "serverless"
+
+  validation {
+    condition     = contains(["serverless", "ollama_gpu"], var.llm_backend)
+    error_message = "llm_backend must be \"serverless\" or \"ollama_gpu\"."
+  }
+}
+
+# ── Serverless inference ──
+
+variable "inference_base_url" {
+  type    = string
+  default = "https://inference.do-ai.run/v1"
+}
+
+variable "inference_model" {
+  type        = string
+  description = "Model ID from the DO model catalog (serverless)"
+  default     = "llama-4-maverick"
+}
+
+variable "inference_api_key" {
+  type        = string
+  description = "DO Model Access Key (export TF_VAR_inference_api_key=...). Never commit it."
+  default     = ""
+  sensitive   = true
+}
+
+# ── Ollama GPU ──
 
 variable "gpu_region" {
   type        = string
@@ -81,48 +140,29 @@ variable "ollama_allowed_cidrs" {
   default     = ["0.0.0.0/0"]
 }
 
-variable "github_repo" {
-  type        = string
-  description = "owner/repo that contains Clase III/Dockerfile"
-}
-
-variable "github_branch" {
-  type    = string
-  default = "main"
-}
-
-variable "deploy_on_push" {
-  type    = bool
-  default = true
-}
-
-variable "deploy_app" {
-  type        = bool
-  description = "Also deploy the FastAPI agent on App Platform"
-  default     = true
-}
-
-# ── SSH key ───────────────────────────────────────────────────────────────
-
 locals {
-  ssh_public_key = trimspace(
+  use_gpu = var.llm_backend == "ollama_gpu"
+}
+
+# ── 1) (Opcional) GPU Droplet + Ollama ─────────────────────────────────────
+
+resource "digitalocean_ssh_key" "lab" {
+  count = local.use_gpu ? 1 : 0
+
+  name = "${var.app_name}-gpu"
+  public_key = trimspace(
     var.ssh_public_key != "" ? var.ssh_public_key : file(pathexpand(var.ssh_public_key_path))
   )
 }
 
-resource "digitalocean_ssh_key" "lab" {
-  name       = "${var.app_name}-gpu"
-  public_key = local.ssh_public_key
-}
-
-# ── 1) GPU Droplet + Ollama ────────────────────────────────────────────────
-
 resource "digitalocean_droplet" "ollama" {
+  count = local.use_gpu ? 1 : 0
+
   name     = "${var.app_name}-ollama"
   region   = var.gpu_region
   size     = var.gpu_size
   image    = var.gpu_image
-  ssh_keys = [digitalocean_ssh_key.lab.id]
+  ssh_keys = [digitalocean_ssh_key.lab[0].id]
 
   user_data = templatefile("${path.module}/cloud-init-ollama.yaml", {
     ollama_model = var.ollama_model
@@ -137,9 +177,11 @@ resource "digitalocean_droplet" "ollama" {
 }
 
 resource "digitalocean_firewall" "ollama" {
+  count = local.use_gpu ? 1 : 0
+
   name = "${var.app_name}-ollama-fw"
 
-  droplet_ids = [digitalocean_droplet.ollama.id]
+  droplet_ids = [digitalocean_droplet.ollama[0].id]
 
   inbound_rule {
     protocol         = "tcp"
@@ -177,11 +219,15 @@ resource "digitalocean_firewall" "ollama" {
 }
 
 locals {
-  ollama_base_url = "http://${digitalocean_droplet.ollama.ipv4_address}:11434"
-  llm_base_url    = "${local.ollama_base_url}/v1"
+  ollama_base_url = local.use_gpu ? "http://${digitalocean_droplet.ollama[0].ipv4_address}:11434" : null
+
+  # Lo único que cambia entre backends: a dónde habla el agente y con qué key.
+  llm_base_url = local.use_gpu ? "${local.ollama_base_url}/v1" : var.inference_base_url
+  llm_model    = local.use_gpu ? var.ollama_model : var.inference_model
+  llm_api_key  = local.use_gpu ? "ollama" : var.inference_api_key
 }
 
-# ── 2) App Platform: SQL agent → Ollama GPU ────────────────────────────────
+# ── 2) App Platform: SQL agent → LLM ───────────────────────────────────────
 
 resource "digitalocean_app" "sql_agent" {
   count = var.deploy_app ? 1 : 0
@@ -193,44 +239,35 @@ resource "digitalocean_app" "sql_agent" {
     service {
       name               = "api"
       instance_count     = 1
-      instance_size_slug = "basic-xxs"
+      instance_size_slug = var.app_instance_size
       http_port          = 8000
 
       # source_dir: app context. dockerfile_path: relative to REPO root (DO quirk).
       source_dir      = "Clase III"
       dockerfile_path = "Clase III/Dockerfile"
 
-      github {
-        repo           = var.github_repo
-        branch         = var.github_branch
-        deploy_on_push = var.deploy_on_push
+      # Repo público: no hace falta conectar GitHub a DO.
+      # Sin deploy_on_push → redeploy manual (consola, doctl o MCP).
+      git {
+        repo_clone_url = var.repo_clone_url
+        branch         = var.repo_branch
       }
 
-      # Wire agent to the GPU Ollama (OpenAI-compatible).
       env {
         key   = "LLM_BASE_URL"
         value = local.llm_base_url
         scope = "RUN_TIME"
       }
       env {
-        key   = "OLLAMA_BASE_URL"
-        value = local.ollama_base_url
-        scope = "RUN_TIME"
-      }
-      env {
         key   = "LLM_MODEL"
-        value = var.ollama_model
-        scope = "RUN_TIME"
-      }
-      env {
-        key   = "OLLAMA_LLM_MODEL"
-        value = var.ollama_model
+        value = local.llm_model
         scope = "RUN_TIME"
       }
       env {
         key   = "LLM_API_KEY"
-        value = "ollama"
+        value = local.llm_api_key
         scope = "RUN_TIME"
+        type  = "SECRET"
       }
       env {
         key   = "REAL_ESTATE_DB"
@@ -239,34 +276,41 @@ resource "digitalocean_app" "sql_agent" {
       }
       env {
         key   = "LLM_TIMEOUT"
-        value = "180"
+        value = "120"
         scope = "RUN_TIME"
+      }
+      dynamic "env" {
+        for_each = local.use_gpu ? [local.ollama_base_url] : []
+        content {
+          key   = "OLLAMA_BASE_URL"
+          value = env.value
+          scope = "RUN_TIME"
+        }
       }
 
       health_check {
         http_path             = "/health"
-        initial_delay_seconds = 30
+        initial_delay_seconds = 20
         period_seconds        = 30
-        timeout_seconds       = 5
+        timeout_seconds       = 10
         success_threshold     = 1
         failure_threshold     = 5
       }
     }
   }
 
-  depends_on = [digitalocean_droplet.ollama]
+  lifecycle {
+    precondition {
+      condition     = local.use_gpu || var.inference_api_key != ""
+      error_message = "llm_backend = \"serverless\" requiere TF_VAR_inference_api_key (Model Access Key de DO)."
+    }
+  }
 }
 
 # ── Outputs ────────────────────────────────────────────────────────────────
 
-output "ollama_public_ip" {
-  description = "GPU droplet IPv4"
-  value       = digitalocean_droplet.ollama.ipv4_address
-}
-
-output "ollama_base_url" {
-  description = "Native Ollama URL"
-  value       = local.ollama_base_url
+output "llm_backend" {
+  value = var.llm_backend
 }
 
 output "llm_base_url" {
@@ -274,9 +318,18 @@ output "llm_base_url" {
   value       = local.llm_base_url
 }
 
+output "llm_model" {
+  value = local.llm_model
+}
+
+output "ollama_public_ip" {
+  description = "GPU droplet IPv4 (only ollama_gpu)"
+  value       = try(digitalocean_droplet.ollama[0].ipv4_address, null)
+}
+
 output "ollama_smoke_test" {
   description = "Run after bootstrap finishes (~5–15 min first boot)"
-  value       = "curl -s ${local.ollama_base_url}/api/tags | jq"
+  value       = local.use_gpu ? "curl -s ${local.ollama_base_url}/api/tags | jq" : null
 }
 
 output "live_url" {
@@ -289,5 +342,5 @@ output "app_id" {
 }
 
 output "cost_reminder" {
-  value = "GPU droplet bills hourly while running. terraform destroy when done."
+  value = local.use_gpu ? "GPU droplet bills hourly while running. terraform destroy when done." : "App Platform ~US$5/mes + tokens. terraform destroy when done."
 }

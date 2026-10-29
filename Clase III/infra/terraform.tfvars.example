@@ -1,18 +1,27 @@
-app_name      = "sql-agent-toy"
-app_region    = "nyc"
-gpu_region    = "tor1"                 # must have GPU stock — check DO console / sizes API
-gpu_size      = "gpu-6000adax1-48gb"   # RTX 6000 Ada 48GB (~$1.57/hr; 4000ada often no stock)
-gpu_image     = "ubuntu-22-04-x64"
-ollama_model  = "llama3.1"
-github_repo   = "tu-usuario/M72V.2"
-github_branch = "main"
-deploy_app    = true
+app_name          = "sql-agent-toy"
+app_region        = "nyc"
+app_instance_size = "apps-s-1vcpu-0.5gb"   # ~US$5/mes
+repo_clone_url    = "https://github.com/sauralph/M72V.2.git"  # o tu fork público
+repo_branch       = "main"
+deploy_app        = true
 
-# SSH: default is ~/.ssh/id_ed25519_do_lab.pub (generate if missing — see README)
+# ── LLM ──────────────────────────────────────────────────────────────────
+# Default: DO Serverless Inference (OpenAI-compatible, se paga por token).
+llm_backend     = "serverless"
+inference_model = "llama-4-maverick"   # ID del catálogo de modelos de DO
+# La key NO va acá: export TF_VAR_inference_api_key=...  (Model Access Key)
+
+# Alternativa: GPU Droplet + Ollama (se paga por hora mientras exista).
+# llm_backend  = "ollama_gpu"
+# gpu_region   = "tor1"                 # must have GPU stock — check DO console / sizes API
+# gpu_size     = "gpu-6000adax1-48gb"   # RTX 6000 Ada 48GB (~$1.57/hr; 4000ada often no stock)
+# gpu_image    = "ubuntu-22-04-x64"
+# ollama_model = "llama3.1"
+#
+# SSH (solo ollama_gpu): default ~/.ssh/id_ed25519_do_lab.pub (generate if missing — see README)
 # ssh_public_key_path = "~/.ssh/id_ed25519_do_lab.pub"
-# or paste the line:
 # ssh_public_key = "ssh-ed25519 AAAA... m72v2-sql-agent-lab"
-
+#
 # Optional hardening:
 # ssh_allowed_cidrs    = ["203.0.113.10/32"]
 # ollama_allowed_cidrs = ["0.0.0.0/0"]  # toy: App Platform needs public reachability

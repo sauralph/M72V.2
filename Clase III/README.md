@@ -6,7 +6,7 @@ Toma la GUI Streamlit del bonus (`Clase II/bonus/`) y la convierte en una
 | Lab (Clase II bonus) | Toy production (esta carpeta) |
 |---|---|
 | Streamlit monolito | FastAPI + `static/index.html` |
-| Ollama nativo hardcodeado | Cliente OpenAI-compatible (Ollama `/v1` u otro) |
+| Ollama nativo hardcodeado | Cliente OpenAI-compatible (Ollama `/v1`, DO Serverless Inference u otro) |
 | `python streamlit run` en la laptop | Docker + healthcheck |
 | Sin infra | `docker-compose` + Terraform (DO App Platform) |
 | DB en carpeta del lab | Copia en `data/real_estate.db` (+ seed toy opcional) |
@@ -14,7 +14,8 @@ Toma la GUI Streamlit del bonus (`Clase II/bonus/`) y la convierte en una
 ## Requisitos
 
 - Python 3.11+
-- Ollama local **o** una API OpenAI-compatible (`LLM_BASE_URL` + `LLM_API_KEY`)
+- Ollama local **o** una API OpenAI-compatible (`LLM_BASE_URL` + `LLM_API_KEY`;
+  ver opciones en `.env.example`)
 - Docker (opcional, para el camino “prod”)
 
 ## Instalación local (sin Docker)
@@ -60,25 +61,36 @@ docker compose up --build
 | `POST` | `/ask` | `{"question":"..."}` → respuesta + SQL + filas |
 | `GET` | `/` | UI mínima |
 
-## Infraestructura como código (Ollama en GPU + agente)
+## Demo en vivo
 
-Ver `infra/README.md`. En un `terraform apply` crea:
+<https://sql-agent-toy-pwkwf.ondigitalocean.app> — App Platform + DO Serverless Inference
+(`llama-4-maverick`). Sin auth: cada pregunta gasta tokens de la cuenta del curso.
 
-1. **GPU Droplet** con **Ollama** (`llama3.1` por default, puerto `11434`)
-2. **App Platform** con el FastAPI, `LLM_BASE_URL=http://<gpu-ip>:11434/v1`
+```bash
+curl -s https://sql-agent-toy-pwkwf.ondigitalocean.app/health | jq
+curl -s -X POST https://sql-agent-toy-pwkwf.ondigitalocean.app/ask \
+  -H 'Content-Type: application/json' \
+  -d '{"question":"Top 5 propiedades más caras en USD con su dirección"}' | jq
+```
+
+## Infraestructura como código (App Platform + LLM)
+
+Ver `infra/README.md`. `llm_backend` elige a dónde habla el agente:
+
+| `llm_backend` | Crea | LLM | Costo |
+|---|---|---|---|
+| `serverless` (default) | App Platform | DO Serverless Inference, `https://inference.do-ai.run/v1` | ~US$5/mes + tokens |
+| `ollama_gpu` | App Platform + GPU Droplet + firewall | Ollama en el GPU, `http://<gpu-ip>:11434/v1` | + ~US$1,57/hora de GPU |
 
 ```bash
 cd infra
-cp terraform.tfvars.example terraform.tfvars
-# editar github_repo + gpu_region
 export DIGITALOCEAN_TOKEN=dop_v1_...
-# SSH default: ~/.ssh/id_ed25519_do_lab.pub
-#   ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_do_lab -N ""
-terraform init && terraform plan   # revisá el costo del GPU
-# terraform apply                  # solo con cuota/lab y token
+export TF_VAR_inference_api_key=...   # Model Access Key de DO (serverless)
+terraform init && terraform plan
+# terraform apply                     # gasta plata real
 ```
 
-⚠️ El GPU se cobra por hora mientras exista. `terraform destroy` al terminar.
+⚠️ `terraform destroy` al terminar (sobre todo con GPU, que se cobra por hora).
 
 Hay un esbozo AWS en `infra/aws_ecs_fargate.tf.example`.
 

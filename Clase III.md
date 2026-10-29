@@ -112,7 +112,7 @@ Laboratorio interdisciplinario de IA en organizaciones · Clase III
 |---|---|---|
 | Streamlit | **FastAPI** + HTML mínimo | Contrato HTTP, health, deploy simple |
 | Import del agente CLI | Módulo `app/agent.py` autocontenido | Imagen sin depender de `Clase II/` |
-| Ollama `/api/generate` | **OpenAI-compatible** `/v1` (+ fallback) | Cambiar de proveedor sin reescribir |
+| Ollama `/api/generate` | **OpenAI-compatible** `/v1` (fallback solo con Ollama) | Cambiar de proveedor sin reescribir |
 | Variables en código | `REAL_ESTATE_DB`, `LLM_*` | 12-factor / secrets en la nube |
 | Sin health | `GET /health` | Load balancer, App Platform, k8s |
 | `pip` local | **Dockerfile** multi-paso simple | Reproducible en CI y en DO/AWS |
@@ -197,14 +197,14 @@ export LLM_BASE_URL=http://localhost:11434/v1
 export LLM_MODEL=llama3.1
 export LLM_API_KEY=ollama
 
-# Cloud OpenAI-compatible
-export LLM_BASE_URL=https://api.openai.com/v1
-export LLM_MODEL=gpt-4o-mini
-export LLM_API_KEY=sk-...
+# Nube: DO Serverless Inference (lo que usa la demo)
+export LLM_BASE_URL=https://inference.do-ai.run/v1
+export LLM_MODEL=llama-4-maverick
+export LLM_API_KEY=...   # Model Access Key de DO
 ```
 
 **Regla de diseño**: el agente habla el dialecto **OpenAI Chat Completions**.  
-Ollama lo expone en `/v1`. Cualquier gateway (vLLM, LiteLLM, Azure OpenAI) entra sin tocar el SQL.
+Ollama lo expone en `/v1`; DO, OpenAI, vLLM o LiteLLM también. Se cambia el LLM sin tocar el SQL.
 
 > En producción real: secretos en el vault del proveedor, nunca en el repo.
 
@@ -472,9 +472,9 @@ aws configure sso
 1. Abrí el CLI-LLM en `M72V.2`
 2. “Listá los MCP conectados”
 3. “Leé `Clase III/infra/main.tf` y explicá qué crea”
-4. Con DO MCP: “¿Hay alguna app llamada `sql-agent-toy`?”
-5. Si no existe: “Generá el plan de Terraform; **no apliques** todavía”
-6. Revisá secrets: `TF_VAR_llm_api_key`, `DIGITALOCEAN_TOKEN`
+4. Con DO MCP: “¿Está sana la app `sql-agent-toy`? ¿Qué `LLM_MODEL` usa?”
+5. “Mostrame los logs del último deploy” · “¿qué modelos serverless hay?”
+6. Revisá secrets: `TF_VAR_inference_api_key`, `DIGITALOCEAN_TOKEN`
 
 **Regla de oro**: el agente propone; **vos** aplicás cambios costosos o irreversibles.
 
@@ -499,68 +499,124 @@ Código app  ──►  imagen Docker  ──►  servicio en App Platform
 
 ---
 
-# El `main.tf` en una slide · Ollama en GPU
+# El `main.tf` en una slide · un switch de backend
 
 ```hcl
-resource "digitalocean_droplet" "ollama" {
-  size   = "gpu-4000adax1-20gb"   # RTX 4000 Ada
-  image  = "ubuntu-22-04-x64"
-  user_data = templatefile("cloud-init-ollama.yaml", {
-    ollama_model = "llama3.1"
-  })
+variable "llm_backend" { default = "serverless" }   # | "ollama_gpu"
+
+resource "digitalocean_droplet" "ollama" {           # solo si ollama_gpu
+  count     = local.use_gpu ? 1 : 0
+  size      = "gpu-6000adax1-48gb"
+  user_data = templatefile("cloud-init-ollama.yaml", { ollama_model = "llama3.1" })
 }
 
-resource "digitalocean_app" "sql_agent" {
-  # FastAPI en CPU barato
-  env { key = "LLM_BASE_URL"
-        value = "http://${droplet.ipv4_address}:11434/v1" }
-  env { key = "LLM_MODEL" value = "llama3.1" }
+resource "digitalocean_app" "sql_agent" {            # FastAPI en CPU barato
+  git { repo_clone_url = var.repo_clone_url }       # repo público, sin GitHub app
+  env { key = "LLM_BASE_URL" value = local.llm_base_url }   # DO serverless | GPU /v1
+  env { key = "LLM_MODEL"    value = local.llm_model }      # llama-4-maverick | llama3.1
+  env { key = "LLM_API_KEY"  value = local.llm_api_key  type = "SECRET" }
   health_check { http_path = "/health" }
 }
 ```
 
-**Qué declara**: GPU + Ollama + agente App Platform cableado al `/v1`.  
-**Qué no**: VPC privada, auth en Ollama, autoscaling, DB gestionada.
+**Qué declara**: el agente + *a dónde habla* (serverless o GPU propio).  
+**Qué no**: VPC privada, auth, autoscaling, DB gestionada.
 
 ---
 
-# Despliegue mínimo paso a paso · Ollama GPU
+# Despliegue mínimo paso a paso · serverless
 
 ```bash
 export DIGITALOCEAN_TOKEN=dop_v1_...
-export TF_VAR_github_repo="tu-usuario/M72V.2"
-# SSH: ~/.ssh/id_ed25519_do_lab.pub (ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_do_lab -N "")
+export TF_VAR_inference_api_key=...   # Model Access Key (consola DO → Inference)
 
 cd "Clase III/infra"
-cp terraform.tfvars.example terraform.tfvars
-# gpu_region con stock; ollama_model = llama3.1
+terraform init && terraform plan      # 1 recurso: la app
+terraform apply                       # ~3–5 min: build del Dockerfile
 
-terraform init && terraform plan   # ¡mirá el costo del GPU!
-terraform apply                    # 5–15 min: install + pull
+URL=$(terraform output -raw live_url)
+curl -s $URL/health | jq
+curl -s -X POST $URL/ask -H 'Content-Type: application/json' \
+  -d '{"question":"¿Cuántas propiedades hay por dormitorios?"}' | jq
 
-terraform output ollama_smoke_test
-terraform output live_url
-# al terminar la clase:
-terraform destroy
+terraform destroy                     # al terminar la clase
 ```
+
+Variante GPU: `llm_backend = "ollama_gpu"` en `terraform.tfvars` → 4 recursos, 5–15 min de boot, **~US$1,57/h**.
 
 ---
 
-# Diagrama del despliegue toy · Ollama GPU
+# Diagrama del despliegue toy
+
+<div class="columns">
+
+<div>
+
+**A · `serverless` (la demo)**
 
 ```text
-  Usuario ──HTTPS──► DO App Platform (FastAPI + SQLite)
-                              │
-                              │  LLM_BASE_URL
-                              │  http://<gpu-ip>:11434/v1
-                              ▼
-                     GPU Droplet (RTX 4000 Ada)
-                     Ollama · llama3.1 · :11434
+Usuario ──HTTPS──►
+  App Platform
+  FastAPI + SQLite
+        │ LLM_BASE_URL
+        │ inference.do-ai.run/v1
+        ▼
+  DO Serverless Inference
+  llama-4-maverick
 ```
 
-- **App Platform** = CPU barato, contenedor del agente  
-- **GPU Droplet** = Ollama (mismo protocolo que en la laptop)  
-- SQLite viaja *dentro* de la imagen del agente
+~US$5/mes + tokens
+
+</div>
+
+<div>
+
+**B · `ollama_gpu`**
+
+```text
+Usuario ──HTTPS──►
+  App Platform
+  FastAPI + SQLite
+        │ LLM_BASE_URL
+        │ http://<gpu-ip>:11434/v1
+        ▼
+  GPU Droplet
+  Ollama · llama3.1
+```
+
+~US$5/mes + **~US$1,57/hora** de GPU
+
+</div>
+
+</div>
+
+Mismo contenedor, mismo código: **solo cambian 3 variables de entorno**. SQLite viaja dentro de la imagen.
+
+---
+
+# Demo en vivo
+
+**<https://sql-agent-toy-pwkwf.ondigitalocean.app>**
+
+| Pregunta | SQL generado | Tiempo |
+|---|---|---|
+| ¿Cuántas propiedades hay por dormitorios? | `SELECT bedrooms, COUNT(*) … GROUP BY bedrooms` | ~7 s |
+| Top 5 más caras en USD con dirección | `SELECT address, price_usd … ORDER BY price_usd DESC LIMIT 5` | ~8 s |
+
+- `GET /health` → DB + alcance del LLM · `GET /meta` → tablas y ejemplos
+- Probala desde la UI (`/`) o con `curl` — **sin auth: cada pregunta gasta tokens**
+
+---
+
+# Lo que se rompió al desplegar (y por qué importa)
+
+| Síntoma | Causa | Lección |
+|---|---|---|
+| `/ask` → `localhost:11434 refused` | El fallback a Ollama **tapaba** el error real del proveedor | Un fallback silencioso es un bug: mostrá el error original |
+| `LLM HTTP 404 model not found` | `llama3.3-70b-instruct` salió del catálogo serverless | El catálogo cambia: el modelo es **config**, no código |
+| `/health` OK pero `/ask` falla | El health solo prueba alcance, no una inferencia | Health ≠ smoke test end-to-end |
+
+Arreglo: un commit al agente + cambiar `LLM_MODEL` en App Platform. **Sin tocar el SQL.**
 
 ---
 
@@ -588,11 +644,11 @@ curl localhost:8000/health
 
 **Terraform + App Platform**
 
-- Build en la nube desde GitHub
-- Secretos en el panel/DO
+- Build en la nube desde el repo
+- Key del LLM como `SECRET`
 - URL HTTPS gestionada
 - Healthcheck nativo
-- Escala a 1 instancia (xxs)
+- 1 instancia (0,5 GB · ~US$5/mes)
 
 ```bash
 terraform apply
@@ -614,8 +670,9 @@ Misma **imagen mental**: proceso stateless + config por env + health.
 4. `docker compose up` y pegarle a `/health`  
 5. Instalar **un** CLI-LLM (Claude Code, Grok o `llm`)  
 6. Configurar **un** MCP de cloud en modo lectura  
-7. Leer `infra/main.tf` y completar `terraform.tfvars`  
-8. *(Opcional)* `terraform plan` — apply solo con cuota/lab
+7. Pegarle a la **demo en vivo** y comparar el SQL con el local  
+8. Leer `infra/main.tf`: ¿qué cambia entre `serverless` y `ollama_gpu`?  
+9. *(Opcional)* `terraform plan` — apply solo con cuota/lab
 
 ---
 
@@ -626,7 +683,7 @@ Misma **imagen mental**: proceso stateless + config por env + health.
 | Auth / multi-usuario | No |
 | Observabilidad (métricas, traces) | No |
 | DB gestionada / backups | No (SQLite en imagen) |
-| GPU / Ollama en la nube | No (LLM remoto vía API) |
+| GPU / Ollama en la nube | Opcional (`ollama_gpu`); la demo usa LLM serverless |
 | Gráficos matplotlib | Recortados en toy (JSON only) |
 | Cumplimiento / PII | No evaluado |
 
