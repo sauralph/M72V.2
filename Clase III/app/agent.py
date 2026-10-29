@@ -27,6 +27,8 @@ LLM_MODEL = os.environ.get("OLLAMA_LLM_MODEL") or os.environ.get(
     "LLM_MODEL", "llama3.1"
 )
 LLM_API_KEY = os.environ.get("LLM_API_KEY", "ollama")  # Ollama ignores key
+# Heurística: puerto 11434 o la base derivada de OLLAMA_BASE_URL → hay Ollama.
+IS_OLLAMA = ":11434" in LLM_BASE_URL or "LLM_BASE_URL" not in os.environ
 LLM_TIMEOUT = int(os.environ.get("LLM_TIMEOUT", "120"))
 
 DEFAULT_DB = os.environ.get(
@@ -213,6 +215,9 @@ def _llm_generate(
     try:
         return _openai_compatible(prompt, temperature, system, force_json)
     except Exception:
+        # Sin Ollama detrás (p. ej. DO serverless), mostrar el error real.
+        if not IS_OLLAMA:
+            raise
         return _ollama_native(prompt, temperature, system, force_json)
 
 
@@ -234,18 +239,21 @@ def _openai_compatible(
     }
     # Ollama accepts both; OpenAI uses response_format.
     if force_json:
-        body["format"] = "json"
+        if IS_OLLAMA:
+            body["format"] = "json"
         body["response_format"] = {"type": "json_object"}
-    r = requests.post(
-        url,
-        headers={
-            "Authorization": f"Bearer {LLM_API_KEY}",
-            "Content-Type": "application/json",
-        },
-        json=body,
-        timeout=LLM_TIMEOUT,
-    )
-    r.raise_for_status()
+    headers = {
+        "Authorization": f"Bearer {LLM_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    r = requests.post(url, headers=headers, json=body, timeout=LLM_TIMEOUT)
+    if r.status_code in (400, 422) and "response_format" in body:
+        # Algunos proveedores no soportan json_object: reintentar sin él
+        # (_extract_json igual tolera texto alrededor del JSON).
+        body.pop("response_format")
+        r = requests.post(url, headers=headers, json=body, timeout=LLM_TIMEOUT)
+    if not r.ok:
+        raise RuntimeError(f"LLM HTTP {r.status_code}: {r.text[:300]}")
     data = r.json()
     return data["choices"][0]["message"]["content"]
 
