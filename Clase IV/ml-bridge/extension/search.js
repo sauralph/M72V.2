@@ -89,7 +89,8 @@ export async function searchMercadoLibre(job) {
 }
 
 export async function getItem(job) {
-  const id = String(job.id || job.item_id || "").trim();
+  // Bridge jobs carry the listing in item_id (job.id is the job's own id).
+  const id = String(job.item_id || job.id || "").trim();
   if (!id) throw new Error("id is required");
   const url = `https://api.mercadolibre.com/items/${encodeURIComponent(id)}`;
   const res = await fetch(url, {

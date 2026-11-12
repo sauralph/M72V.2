@@ -294,7 +294,8 @@ def handle_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
             timeout=90,
         )
     if name == "ml_item":
-        return submit_job("item", {"id": arguments.get("id")})
+        # "id" is reserved for the job id; the extension reads the listing id from item_id.
+        return submit_job("item", {"item_id": arguments.get("id")})
     return {"ok": False, "error": f"unknown tool {name}"}
 
 
