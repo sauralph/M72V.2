@@ -169,6 +169,23 @@ El bridge es el diseño **honesto** cuando el proveedor no te invita.
 
 ---
 
+# ¿Y un agente de navegador “de fábrica”?
+
+Hoy varios agentes ya controlan el navegador con **tu sesión** (extensiones, Playwright MCP).
+
+| | Agente de navegador genérico | `ml-bridge` |
+|---|---|---|
+| Qué ve el modelo | La página entera (DOM, capturas) | 4 campos por aviso |
+| Qué puede hacer | Clic, tipear, **comprar** | Solo leer |
+| Superficie | Cualquier sitio abierto | Un sitio, 4 tools |
+| Costo | Muchos tokens, lento | Un JSON chico |
+
+**Genérico**: explorar un sitio nuevo. **Puente**: tarea repetida, salida acotada.
+
+> El puente no compite con el producto: es **el mismo patrón, con permisos mínimos**.
+
+---
+
 # Anatomía de `ml-bridge`
 
 ```text
