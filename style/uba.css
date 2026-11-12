@@ -152,6 +152,9 @@ table th {
   font-weight: 600;
 }
 
+/* Bold inside header cells keeps the header's white text. */
+table th strong { color: inherit; }
+
 table td {
   padding: 0.45em 0.8em;
   border-bottom: 1px solid #e5e7eb;

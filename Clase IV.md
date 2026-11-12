@@ -254,12 +254,10 @@ args = ["Clase IV/ml-bridge/server/ml_bridge.py"]
 | `ml_search_many` | Una lista de partes | `[{id, query}, …]` |
 | `ml_item` | Un aviso por id | `MLA…` |
 
-En Grok las ves namespaced: `ml-bridge__ml_search`.
+En Grok las ves namespaced: `ml-bridge__ml_search`. Para verificar:
 
 ```bash
-grok mcp list
-grok mcp doctor ml-bridge
-# En la sesión: “Listá los MCP conectados”
+grok mcp list && grok mcp doctor ml-bridge
 ```
 
 > `ml_search_many` es el atajo para **armar un carrito**. Una tool-call, N búsquedas.
@@ -390,7 +388,7 @@ De una pregunta de hardware a un **carrito cotizado en Mercado Libre**.
 what kind of hardware do I need to run a local kimi3 model?
 ```
 
-**Kimi K3 no es un modelo de desktop.** MoE de 2,8T parámetros (104B activos), visión nativa, contexto de 1M.
+**Kimi K3 no es un modelo de desktop.** MoE de 2,8T parámetros (104B activos), contexto de 1M.
 
 | Objetivo | Memoria | Hardware que entra |
 |---|---|---|
@@ -399,8 +397,7 @@ what kind of hardware do I need to run a local kimi3 model?
 | GGUF 2-bit | **~726–880 GB** | La misma clase, más memoria |
 | Q8 / pesos nativos | **~1,6 TB** | Cluster, no workstation |
 
-> Una 4090, una 5090 o un Mac de 128 GB **no corren K3** de forma útil.  
-> Hay que cotizar un **server**, no una PC gamer.
+> Una 4090, una 5090 o un Mac de 128 GB **no corren K3**: hay que cotizar un **server**.
 
 ---
 
@@ -414,18 +411,14 @@ do a budget for such a computer
 Lo que el runtime le dijo al modelo, en esa sesión:
 
 ```text
-MCP servers connected:
-- ml-bridge (4 tools)
-
-MCP servers that failed to connect:
-- mercadolibre  (handshake failed)
+MCP servers connected:               - ml-bridge (4 tools)
+MCP servers that failed to connect:  - mercadolibre (handshake failed)
 ```
 
 Grok no “se inventó” Mercado Libre. Primero hizo `ml_status`:
 
 ```json
-{ "session": { "host": "www.mercadolibre.com.ar",
-               "loggedIn": true, "cookieCount": 44 } }
+{ "session": { "host": "www.mercadolibre.com.ar", "loggedIn": true, "cookieCount": 44 } }
 ```
 
 > Sesión humana viva. Recién ahí disparó `ml_search_many` sobre RAM ECC, chasis, NVMe y GPUs.
